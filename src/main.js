@@ -33,8 +33,8 @@ void function setup_input(){
             input.right = true
         else if ( k == 38)
             input.up = true
-        else if ( k == 38)
-            input.up = true
+        else if ( k == 40)
+            input.down = true
         else if ( k == 88 )
             input.fire = true
 
@@ -51,8 +51,8 @@ void function setup_input(){
             input.right = false
         else if ( k == 38)
             input.up = false
-        else if ( k == 38)
-            input.up = false
+        else if ( k == 40)
+            input.down = false
         else if ( k == 88 )
             input.fire = false
 
@@ -62,14 +62,27 @@ void function setup_input(){
 
 }()
 
+void function get_image(){
 
-void function start_game(){
+    var images = {
+    
+        weapon_standard: "images/weapon_standard.png"
+    
+    }
+    
+    load_images(images, function(images){
+        game.images = images
+        start_game()
+    })
+}()
+
+
+function start_game(){
     
     // add first entities
     var player = require("./entities/player")
 
     game.add(anew(player))
-    
    
     // spin
     flywheel(function(time_delta, time_stamp){
@@ -81,4 +94,4 @@ void function start_game(){
     
     }).start()
 
-}()
+}

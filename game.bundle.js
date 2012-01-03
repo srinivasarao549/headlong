@@ -809,76 +809,94 @@ module.exports = load_images
 });
 
 require.define("/libs/anew.js", function (require, module, exports, __dirname, __filename) {
+    void function(root){
+
     var get_proto = Object.getPrototypeOf,
-    init = "init"
+        has_own_prop = Function.prototype.call.bind(Object.prototype.hasOwnProperty)
     
-function anew(proto, object){
-  
-    void function set_defaults(){
+
+    function anew(proto, object){
+        
+        // defaults 
         if ( proto === undefined ) proto = {}
         if ( object === undefined ) object = {}
-    }()
 
-    function mixin_object(to, from){
+        // logic
+        var return_object = Object.create(proto)
         
-        Object.keys(from).forEach(function(key){
-            to[key] = from[key]
-        })
+        mixin_object(return_object, object)
+        if ( proto instanceof Object ) call_proto_constructors(return_object)
+        if ( has_own_prop(return_object, "constructor") ) return_object["constructor"]()
+        
+        return return_object
 
+        // helpers 
+        function mixin_object(to, from){
+            
+            Object.keys(from).forEach(copy_key_val)
+            
+            function copy_key_val(key){
+                to[key] = from[key] 
+            }
+        
+        }
+        
+
+        function call_proto_constructors(object, proto){
+            
+            if ( !proto ) proto = get_proto(object)
+            
+            if ( proto === Object.prototype ) return
+            else call_proto_constructors(object, get_proto(proto)) 
+            
+            // apply while falling from stack 
+            if ( proto["constructor"] ) proto["constructor"].call(object)
+        }
     }
     
-    function call_proto_inits(object, proto){
-        
-        // if we've reached the top of the stack, return
-        if ( proto === Object.prototype ) return
+    // export
+    if ( typeof module !== "undefined" && module.exports ) 
+        module.exports = anew
+    else 
+        root["anew"] = anew
 
-        // in case proto is undefined
-        if ( !proto ) proto = get_proto(object)
-                     
-        // recurse
-        call_proto_inits(object, get_proto(proto)) 
-        
-        // apply while falling from stack 
-        if ( proto[init] ) proto[init].apply(object)
-
-    }
-   
-    var return_object = Object.create(proto)
-    
-    // mixin extra props
-    mixin_object(return_object, object)
-
-    // call all inits in prototype
-    if ( proto instanceof Object ) call_proto_inits(return_object)
-   
-    // call init that's been mixed in, if any (call in case of null proto)
-    if ( {}.hasOwnProperty.call(return_object, init) ) return_object[init]()
-    
-    return return_object
-}
-
-module.exports = anew
+}(this)
 
 });
 
 require.define("/game.js", function (require, module, exports, __dirname, __filename) {
-    var platform_md = require("./libs/platform_md"),
+    var entity_md = require("./libs/entity_md"),
     anew = require("./libs/anew")
 
-var game = anew(platform_md, {
+var game = anew(entity_md, {
 
     // add game objects to all added objects
     add: function(object){
-        platform_md.add.apply(this, arguments)
+        entity_md.add.apply(this, arguments)
         object.game = this
     },
     
     check_entity_collision: function(){
-        this._entities.forEach(function(entity){
-            if ( entity.pre_check_collision ) entity.pre_check_collision()
-        })
 
-        platform_md.check_entity_collision.apply(this, arguments)
+    },
+
+    update_entities: function(time_delta){
+        this._entities.forEach(function(e){
+            if ( e.update ) e.update(time_delta)
+        })
+    },
+    
+    draw_entities: function(){
+        var context = this.context,
+            canvas = context.canvas,
+            images = this.images
+
+        context.clearRect(0, 0, canvas.width, canvas.height)
+
+        this._entities.forEach(function(e){
+            if ( e.image ) context.drawImage(images[e.image], e.x, e.y, e.width, e.height)
+            if ( e.draw ) e.draw(context)
+        })
     },
 
     move_entities: function(time_delta){
@@ -898,194 +916,14 @@ module.exports = game
 
 });
 
-require.define("/libs/platform_md.js", function (require, module, exports, __dirname, __filename) {
-    var anew = require("./anew"),
-    clash = require("./clash"),
-    entity_md = require("./entity_md")
-
-    /* PLATFORM_MD */
-    var platform_md = anew(entity_md, {
-    
-        init: function(){
-            this.canvas = undefined
-            this.context = undefined
-        },
-
-        // 'world' attributes
-        gravity: 20,    // 'force' in force = mass * acceleration
-        
-
-// -------------------------------------------------
-//      EXTENDED entity_md METHODS
-
-
-        add: function(object){
-            entity_md.add.apply(this, arguments)
-            object.md = this
-        },
-
-
-// -------------------------------------------------
-//      GAME LOOP METHODS
-        
-        update_entities: function(time_delta, time_stamp){
-            function update_entity(entity){
-                if ( entity.update ) entity.update(time_delta, time_stamp)
-            }
-            this._entities.forEach(update_entity)
-        },
-
-        draw_entities: function(){
-            var context = this.context,
-                canvas = this.canvas
-
-            function draw_entity(entity){
-                context.globalAlpha = entity.opacity || 1
-                if ( entity.draw ) entity.draw(context, canvas)
-                if ( entity.image ) draw_image(entity)
-            }
-
-            function draw_image(entity){
-                context.drawImage(entity.image, entity.x, entity.y)
-            }
-            
-            context.clearRect(0, 0, canvas.width, canvas.height)
-            this._entities.forEach(draw_entity)
-        },
-    
-        // TODO: give collision a 'has a', not 'is a' relationship w/ entity
-        check_entity_collision: function(){
-            
-            var entities = this._entities
-
-            function check_collision(entityA, entityB){
-                if ( clash.aabb_aabb(entityA, entityB)
-                     && entityA.check_collision ) entityA.check_collision(entityB)
-            }
-
-            function check_against_all_entities(entityA){
-                entities.forEach(function(entityB){
-                    check_collision(entityA, entityB)
-                })
-            }
-
-            entities.forEach(check_against_all_entities)
-        }
-    
-    })
-
-    
-    /* EXPORTS */
-    if ( typeof module != "undefined" ) module.exports = platform_md
-    else root["platform_md"] = platform_md
-
-
-});
-
-require.define("/libs/clash.js", function (require, module, exports, __dirname, __filename) {
-      
-var clash = {
-
-    point_point: function(A, B){
-        return ( (A.x == B.x) && (A.y == B.y) )
-    },
-    point_circle: function(A, B){
-        var rsq = B.radius * B.radius,
-            diffx = A.x - B.x,
-            diffy = A.y - B.y,
-            distsq = (diffx*diffx) + (diffy*diffy)
-
-        return distsq <= rsq
-    },
-    point_aabb: function(A, B){
-        var Bright = B.x + B.width,
-            Bbottom = B.y + B.height
-        
-        return (A.x >= B.x && A.x <= Bright && A.y >= B.y && A.y <= Bbottom)
-    },
-    point_poly: function(A, B){
-        var verts = B.vertices,
-            l = verts.length,
-            odd = false
-                                
-        // for info about this algorithm, see http://paulbourke.net/geometry/insidepoly/ (it's the first one, basically)
-        for (var i = 0, j = l - 1; i < l; j = i++ ){
-            var v_i = verts[i],
-                v_j = verts[j]
-                
-            //  for gradient
-            if ( (A.x <= v_i.x) != (A.x <= v_j.x) || (A.x < v_i.x) != (A.x < v_j.x) ){
-                var m = (v_i.y - v_j.y)/(v_i.x - v_j.x),
-                    y_for_x = m*(A.x - v_i.x) + v_i.y
-                
-                // check if on line
-                if ( A.y == y_for_x ) return true 
-                
-                // otherwise, project
-                else if ( A.y < y_for_x ) odd = !odd
-            
-                // if v_i.x == v_j.x, m will be -Infinity || Infinity, and y_for_x will be NaN, so do another check
-                else if ( m == Math.abs(Infinity) && A.y <= v_i.y ) odd = !odd    
-            
-            
-            }
-
-        }
-        return odd
-        
-    },
-    circle_circle: function(A, B){
-        var rdistsq = (A.radius + B.radius) * (A.radius + B.radius),
-            diffx = A.x - B.x,
-            diffy = A.y - B.y,
-            distsq = (diffx*diffx) + (diffy*diffy)
-
-        return distsq <= rdistsq
-    },
-    circle_aabb: function(A, B){
-        var Bx = B.x,
-            By = B.y,
-            Bright = B.x + B.width,
-            Bbottom = B.y + B.height
-                                
-        // test point->circle for each corner
-        if ( this.point_circle({x: Bx, y: By}, A) ) return true
-        if ( this.point_circle({x: Bright, y: By}, A) ) return true
-        if ( this.point_circle({x: Bx, y: Bbottom}, A) ) return true
-        if ( this.point_circle({x: Bright, y: Bbottom}, A) ) return true
-        
-        // test aabb->aabb if the corners don't collide     
-        var A_aabb = {x: A.x, y: A.y}
-        A_aabb.width = A.radius
-        A_aabb.height = A.radius       
-        return this.aabb_aabb(A_aabb, B)
-    },
-    circle_poly: function(A, B){},
-    aabb_aabb: function(A, B){
-        var Aright = A.x + A.width,
-            Abottom = A.y + A.height,
-            Bright = B.x + B.width,
-            Bbottom = B.y + B.height
-            
-        return !(A.x > Bright || Aright < B.x || A.y > Bbottom || Abottom < B.y)
-        
-    },
-    aabb_poly: function(A, B){},
-    poly_poly: function(A, B){}
-}
-
-module.exports = clash
-
-});
-
 require.define("/libs/entity_md.js", function (require, module, exports, __dirname, __filename) {
-    void function(context){
+    void function(root){
 
    // main controlling object
     var entity_md = {
         
         // ctor and attrs
-        init: function(){
+        constructor: function(){
             this._entities = []
         },
         _entities_modified: false,
@@ -1114,14 +952,11 @@ require.define("/libs/entity_md.js", function (require, module, exports, __dirna
         },
         
         find_instances: function(ctor, obj_set){
-            var objs = obj_set || this._entities,
-                return_objs = []
-            
-            objs.forEach(function(o){
-                if ( o.constructor == ctor ) 
-                    return_objs.push(o)
+            var objs = obj_set || this._entities
+
+            return objs.filter(function(o){
+                return o instanceof ctor        
             })
-            return return_objs
         },
         
         find_nearest: function(reference_object, obj_set){
@@ -1163,30 +998,51 @@ require.define("/libs/entity_md.js", function (require, module, exports, __dirna
             
             return objects
         }
-        
     };
 
-    module.exports = entity_md
+    entity_md.constructor()
+
+    if (typeof module !== 'undefined' && module.exports) 
+        module["exports"] = entity_md
+    else 
+        root["entity_md"] = entity_md
+
 }(this)
 
 });
 
 require.define("/entities/player.js", function (require, module, exports, __dirname, __filename) {
-    var anew = require("../libs/anew")
-
+    var anew = require("../libs/anew"),
+    weapons = require("./player_weapons")
 
 var player = anew({
 
     game: undefined,
-    x: 0,
-    y: 0,
+    x: 150,
+    y: 500,
+    width: 50,
+    height: 60,
+
+    weapon: weapons.standard, 
+
     draw: function(context){
-        context.fillRect(this.x, this.y, 100, 100)
+        context.fillStyle = "#eee"
+        context.fillRect(this.x, this.y, this.width, this.height)
     },
     update: function(td){
         
-        var vector = input_to_vector(this.game.input)
-        console.log(vector)
+        var input = this.game.input,
+            game = this.game,
+            self = this
+
+        // handle movement
+        var vector = input_to_vector(input)
+        this.x += vector.x * td
+        this.y += vector.y * td
+        
+        // handle firing
+        fire(input)
+
 
         function input_to_vector(input){
             var vector = {x: 0, y: 0}
@@ -1200,6 +1056,19 @@ var player = anew({
            return vector
         }
         
+        function fire(input){
+        
+            if ( !input.fire ) return
+            
+            var bullet = anew(self.weapon)
+            
+            bullet.x = self.x + (bullet.offset.x * self.width) - (bullet.width / 2)
+            bullet.y = self.y + (bullet.offset.y * self.height) - (bullet.height / 2)
+
+            game.add(bullet)
+        }
+       
+
     }
     
 
@@ -1207,6 +1076,41 @@ var player = anew({
 
 
 module.exports = player
+
+});
+
+require.define("/entities/player_weapons.js", function (require, module, exports, __dirname, __filename) {
+    var anew = require("../libs/anew")
+
+var standard = anew({}, {
+    
+
+    constructor: function(){
+        this.offset = {x: 0.5, y: 0}
+    },
+
+    image: "weapon_standard",
+    x: 0,
+    y: 0,
+    width: 10,
+    height: 10,
+    speed: 0.5,
+    
+    update: function(td){
+        this.y -= this.speed * td
+
+        if ( this.y < 100 ) this.game.remove(this)
+    }
+
+})
+
+
+
+//exports
+
+module.exports = {
+    standard: standard
+}
 
 });
 
@@ -1246,8 +1150,8 @@ void function setup_input(){
             input.right = true
         else if ( k == 38)
             input.up = true
-        else if ( k == 38)
-            input.up = true
+        else if ( k == 40)
+            input.down = true
         else if ( k == 88 )
             input.fire = true
 
@@ -1264,8 +1168,8 @@ void function setup_input(){
             input.right = false
         else if ( k == 38)
             input.up = false
-        else if ( k == 38)
-            input.up = false
+        else if ( k == 40)
+            input.down = false
         else if ( k == 88 )
             input.fire = false
 
@@ -1275,14 +1179,27 @@ void function setup_input(){
 
 }()
 
+void function get_image(){
 
-void function start_game(){
+    var images = {
+    
+        weapon_standard: "images/weapon_standard.png"
+    
+    }
+    
+    load_images(images, function(images){
+        game.images = images
+        start_game()
+    })
+}()
+
+
+function start_game(){
     
     // add first entities
     var player = require("./entities/player")
 
     game.add(anew(player))
-    
    
     // spin
     flywheel(function(time_delta, time_stamp){
@@ -1294,7 +1211,7 @@ void function start_game(){
     
     }).start()
 
-}()
+}
 
 });
 require("/main.js");

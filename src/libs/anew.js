@@ -1,49 +1,52 @@
-var get_proto = Object.getPrototypeOf,
-    init = "init"
+void function(root){
+
+    var get_proto = Object.getPrototypeOf,
+        has_own_prop = Function.prototype.call.bind(Object.prototype.hasOwnProperty)
     
-function anew(proto, object){
-  
-    void function set_defaults(){
+
+    function anew(proto, object){
+        
+        // defaults 
         if ( proto === undefined ) proto = {}
         if ( object === undefined ) object = {}
-    }()
 
-    function mixin_object(to, from){
+        // logic
+        var return_object = Object.create(proto)
         
-        Object.keys(from).forEach(function(key){
-            to[key] = from[key]
-        })
+        mixin_object(return_object, object)
+        if ( proto instanceof Object ) call_proto_constructors(return_object)
+        if ( has_own_prop(return_object, "constructor") ) return_object["constructor"]()
+        
+        return return_object
 
+        // helpers 
+        function mixin_object(to, from){
+            
+            Object.keys(from).forEach(copy_key_val)
+            
+            function copy_key_val(key){
+                to[key] = from[key] 
+            }
+        
+        }
+        
+
+        function call_proto_constructors(object, proto){
+            
+            if ( !proto ) proto = get_proto(object)
+            
+            if ( proto === Object.prototype ) return
+            else call_proto_constructors(object, get_proto(proto)) 
+            
+            // apply while falling from stack 
+            if ( proto["constructor"] ) proto["constructor"].call(object)
+        }
     }
     
-    function call_proto_inits(object, proto){
-        
-        // if we've reached the top of the stack, return
-        if ( proto === Object.prototype ) return
+    // export
+    if ( typeof module !== "undefined" && module.exports ) 
+        module.exports = anew
+    else 
+        root["anew"] = anew
 
-        // in case proto is undefined
-        if ( !proto ) proto = get_proto(object)
-                     
-        // recurse
-        call_proto_inits(object, get_proto(proto)) 
-        
-        // apply while falling from stack 
-        if ( proto[init] ) proto[init].apply(object)
-
-    }
-   
-    var return_object = Object.create(proto)
-    
-    // mixin extra props
-    mixin_object(return_object, object)
-
-    // call all inits in prototype
-    if ( proto instanceof Object ) call_proto_inits(return_object)
-   
-    // call init that's been mixed in, if any (call in case of null proto)
-    if ( {}.hasOwnProperty.call(return_object, init) ) return_object[init]()
-    
-    return return_object
-}
-
-module.exports = anew
+}(this)

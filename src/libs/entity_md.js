@@ -1,10 +1,10 @@
-void function(context){
+void function(root){
 
    // main controlling object
     var entity_md = {
         
         // ctor and attrs
-        init: function(){
+        constructor: function(){
             this._entities = []
         },
         _entities_modified: false,
@@ -33,14 +33,11 @@ void function(context){
         },
         
         find_instances: function(ctor, obj_set){
-            var objs = obj_set || this._entities,
-                return_objs = []
-            
-            objs.forEach(function(o){
-                if ( o.constructor == ctor ) 
-                    return_objs.push(o)
+            var objs = obj_set || this._entities
+
+            return objs.filter(function(o){
+                return o instanceof ctor        
             })
-            return return_objs
         },
         
         find_nearest: function(reference_object, obj_set){
@@ -82,8 +79,13 @@ void function(context){
             
             return objects
         }
-        
     };
 
-    module.exports = entity_md
+    entity_md.constructor()
+
+    if (typeof module !== 'undefined' && module.exports) 
+        module["exports"] = entity_md
+    else 
+        root["entity_md"] = entity_md
+
 }(this)

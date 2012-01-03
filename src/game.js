@@ -27,7 +27,7 @@ var game = anew(entity_md, {
         context.clearRect(0, 0, canvas.width, canvas.height)
 
         this._entities.forEach(function(e){
-            if ( e.image ) context.drawImage(images[e.image], e.x, e.y, e.width, e.height)
+            if ( e.image ) context.drawImage(images[e.image], ~~e.x, ~~e.y, ~~e.width, ~~e.height)
             if ( e.draw ) e.draw(context)
         })
     },

@@ -1,7 +1,6 @@
 var anew = require("../libs/anew")
 
 var standard = anew({}, {
-    
 
     constructor: function(){
         this.offset = {x: 0.5, y: 0}
@@ -11,8 +10,8 @@ var standard = anew({}, {
     x: 0,
     y: 0,
     width: 10,
-    height: 10,
-    speed: 0.5,
+    height: 20,
+    speed: 0.2,
     
     update: function(td){
         this.y -= this.speed * td

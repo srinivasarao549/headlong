@@ -894,7 +894,7 @@ var game = anew(entity_md, {
         context.clearRect(0, 0, canvas.width, canvas.height)
 
         this._entities.forEach(function(e){
-            if ( e.image ) context.drawImage(images[e.image], e.x, e.y, e.width, e.height)
+            if ( e.image ) context.drawImage(images[e.image], ~~e.x, ~~e.y, ~~e.width, ~~e.height)
             if ( e.draw ) e.draw(context)
         })
     },
@@ -1083,7 +1083,6 @@ require.define("/entities/player_weapons.js", function (require, module, exports
     var anew = require("../libs/anew")
 
 var standard = anew({}, {
-    
 
     constructor: function(){
         this.offset = {x: 0.5, y: 0}
@@ -1093,8 +1092,8 @@ var standard = anew({}, {
     x: 0,
     y: 0,
     width: 10,
-    height: 10,
-    speed: 0.5,
+    height: 20,
+    speed: 0.2,
     
     update: function(td){
         this.y -= this.speed * td
@@ -1183,7 +1182,7 @@ void function get_image(){
 
     var images = {
     
-        weapon_standard: "images/weapon_standard.png"
+        weapon_standard: "images/weapon_standard_v2.png"
     
     }
     

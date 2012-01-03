@@ -66,7 +66,7 @@ void function get_image(){
 
     var images = {
     
-        weapon_standard: "images/weapon_standard.png"
+        weapon_standard: "images/weapon_standard_v2.png"
     
     }
     

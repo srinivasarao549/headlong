@@ -11,14 +11,12 @@ var standard = anew({}, {
     y: 0,
     width: 10,
     height: 20,
-    speed: 0.2,
+    speed: 0.5,
+    slipperiness: 1,
     
-    update: function(td){
-        this.y -= this.speed * td
-
-        if ( this.y < -100 ) this.game.remove(this)
+    on_add: function(){
+        this.vel = {speed: this.speed, direction: Math.PI}
     }
-
 })
 
 

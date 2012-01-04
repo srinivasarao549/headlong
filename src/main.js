@@ -89,6 +89,7 @@ function start_game(){
         
         game.move_entities(time_delta)
         game.check_entity_collision()
+        game.handle_delays(time_stamp)
         game.update_entities(time_delta, time_stamp)
         game.draw_entities()
     

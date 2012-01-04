@@ -3,16 +3,50 @@ var entity_md = require("./libs/entity_md"),
 
 var game = anew(entity_md, {
 
-    // add game objects to all added objects
-    // and call their on_add handler
+    // --- ATTRS --- //
+    last_timestamp: 0,
+
+    // --- METHODS --- // 
+    
+    constructor: function(){
+        this.delays = []
+    },
+
+    //  API  //
     add: function(object){
         entity_md.add.apply(this, arguments)
         object.game = this
         if ( object.on_add ) object.on_add()
     },
     
-    check_entity_collision: function(){
+    delay: function(func, ms){
+        this.delays.push({func: func, time: this.last_timestamp + ms})
+        this.delays.sort(function(a, b){
+            return a.time - b.time
+        })
+
+        return func
     },
+
+    //  GAME LOOP  //
+
+
+    handle_delays: function(time_stamp){
+        var delays = this.delays
+
+        delays.forEach(handle_delay)
+
+        function handle_delay(d){
+            if ( d.time > time_stamp ) return
+            d.func()
+            delays.splice(delays.indexOf(d), 1)
+        }
+        this.last_timestamp = time_stamp
+
+    },
+
+
+    check_entity_collision: function(){},
 
     update_entities: function(time_delta){
         this._entities.forEach(function(e){
@@ -20,6 +54,7 @@ var game = anew(entity_md, {
         })
     },
     
+
     draw_entities: function(){
         var context = this.context,
             canvas = context.canvas,
@@ -48,7 +83,6 @@ var game = anew(entity_md, {
             var old_x = entity.x,
                 old_y = entity.y
  
-            console.log(entity.momentum.x, entity.momentum.y)
             // apply 
             entity.x += entity.momentum.x * time_delta
             entity.y += entity.momentum.y * time_delta
@@ -58,8 +92,12 @@ var game = anew(entity_md, {
             entity.y += time_delta * Math.cos(entity.vel.direction) * entity.vel.speed
             
             // store momentum
-            entity.momentum.x = (((entity.x - old_x)) * entity.slipperiness) / time_delta
-            entity.momentum.y = (((entity.y - old_y)) * entity.slipperiness) / time_delta 
+            if ( entity.slipperiness ){
+                entity.momentum.x = ((entity.x - old_x) * entity.slipperiness)
+                                    / time_delta
+                entity.momentum.y = ((entity.y - old_y) * entity.slipperiness)
+                                    / time_delta 
+            }
             // wipe vel
             entity.vel.direction = 0
             entity.vel.speed = 0

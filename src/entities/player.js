@@ -15,9 +15,9 @@ var player = anew({
     width: 50,
     height: 60,
 
-    speed: 0.3,
+    speed: 0.15,
 
-    slipperiness: 0.6,
+    slipperiness: 0.73,
     weapon: weapons.standard, 
 
     draw: function(context){
@@ -35,15 +35,25 @@ var player = anew({
 
     // --- UPDATE HELPERS --- //
     
+    _weapon_cooldown: false,
+
     _firing: function(){
         
-        if ( !this.game.input.fire ) return 
-
+        if ( (!this.game.input.fire) || this._weapon_cooldown ) return 
+    
+        // create new bullet
         var bullet = anew(this.weapon)
         bullet.x = this.x + (bullet.offset.x * this.width ) - (bullet.width / 2)
         bullet.y = this.y + (bullet.offset.y * this.height ) - (bullet.height / 2)
-        
+
         this.game.add(bullet)
+
+        // handle cooldown
+        this._weapon_cooldown = true
+
+        this.game.delay(function(){
+            this._weapon_cooldown = false
+        }.bind(this), 100)
     },
     
     _flying: function(){

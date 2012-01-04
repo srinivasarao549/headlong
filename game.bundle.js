@@ -870,16 +870,50 @@ require.define("/game.js", function (require, module, exports, __dirname, __file
 
 var game = anew(entity_md, {
 
-    // add game objects to all added objects
-    // and call their on_add handler
+    // --- ATTRS --- //
+    last_timestamp: 0,
+
+    // --- METHODS --- // 
+    
+    constructor: function(){
+        this.delays = []
+    },
+
+    //  API  //
     add: function(object){
         entity_md.add.apply(this, arguments)
         object.game = this
         if ( object.on_add ) object.on_add()
     },
     
-    check_entity_collision: function(){
+    delay: function(func, ms){
+        this.delays.push({func: func, time: this.last_timestamp + ms})
+        this.delays.sort(function(a, b){
+            return a.time - b.time
+        })
+
+        return func
     },
+
+    //  GAME LOOP  //
+
+
+    handle_delays: function(time_stamp){
+        var delays = this.delays
+
+        delays.forEach(handle_delay)
+
+        function handle_delay(d){
+            if ( d.time > time_stamp ) return
+            d.func()
+            delays.splice(delays.indexOf(d), 1)
+        }
+        this.last_timestamp = time_stamp
+
+    },
+
+
+    check_entity_collision: function(){},
 
     update_entities: function(time_delta){
         this._entities.forEach(function(e){
@@ -887,6 +921,7 @@ var game = anew(entity_md, {
         })
     },
     
+
     draw_entities: function(){
         var context = this.context,
             canvas = context.canvas,
@@ -915,7 +950,6 @@ var game = anew(entity_md, {
             var old_x = entity.x,
                 old_y = entity.y
  
-            console.log(entity.momentum.x, entity.momentum.y)
             // apply 
             entity.x += entity.momentum.x * time_delta
             entity.y += entity.momentum.y * time_delta
@@ -925,8 +959,12 @@ var game = anew(entity_md, {
             entity.y += time_delta * Math.cos(entity.vel.direction) * entity.vel.speed
             
             // store momentum
-            entity.momentum.x = (((entity.x - old_x)) * entity.slipperiness) / time_delta
-            entity.momentum.y = (((entity.y - old_y)) * entity.slipperiness) / time_delta 
+            if ( entity.slipperiness ){
+                entity.momentum.x = ((entity.x - old_x) * entity.slipperiness)
+                                    / time_delta
+                entity.momentum.y = ((entity.y - old_y) * entity.slipperiness)
+                                    / time_delta 
+            }
             // wipe vel
             entity.vel.direction = 0
             entity.vel.speed = 0
@@ -1051,10 +1089,9 @@ var player = anew({
     width: 50,
     height: 60,
 
-    speed: 0.3,
-    max_speed: 0.3,
+    speed: 0.15,
 
-    slipperiness: 0.8,
+    slipperiness: 0.73,
     weapon: weapons.standard, 
 
     draw: function(context){
@@ -1072,15 +1109,25 @@ var player = anew({
 
     // --- UPDATE HELPERS --- //
     
+    _weapon_cooldown: false,
+
     _firing: function(){
         
-        if ( !this.game.input.fire ) return 
-
+        if ( (!this.game.input.fire) || this._weapon_cooldown ) return 
+    
+        // create new bullet
         var bullet = anew(this.weapon)
         bullet.x = this.x + (bullet.offset.x * this.width ) - (bullet.width / 2)
         bullet.y = this.y + (bullet.offset.y * this.height ) - (bullet.height / 2)
-        
+
         this.game.add(bullet)
+
+        // handle cooldown
+        this._weapon_cooldown = true
+
+        this.game.delay(function(){
+            this._weapon_cooldown = false
+        }.bind(this), 100)
     },
     
     _flying: function(){
@@ -1131,14 +1178,12 @@ var standard = anew({}, {
     y: 0,
     width: 10,
     height: 20,
-    speed: 0.2,
+    speed: 0.5,
+    slipperiness: 1,
     
-    update: function(td){
-        this.y -= this.speed * td
-
-        if ( this.y < -100 ) this.game.remove(this)
+    on_add: function(){
+        this.vel = {speed: this.speed, direction: Math.PI}
     }
-
 })
 
 
@@ -1243,6 +1288,7 @@ function start_game(){
         
         game.move_entities(time_delta)
         game.check_entity_collision()
+        game.handle_delays(time_stamp)
         game.update_entities(time_delta, time_stamp)
         game.draw_entities()
     

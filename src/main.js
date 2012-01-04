@@ -22,7 +22,7 @@ void function setup_input(){
         fire: false,
     }
 
- 
+
     // get controls
     bean.add(document, 'keydown', function(e){
         var k = e.which
@@ -80,21 +80,42 @@ void function get_image(){
 function start_game(){
     
     // add first entities
-    var player = require("./entities/player")
+    var player = require("./entities/player"),
+        Stats = require("./libs/Stats.js"),
+        stats = new Stats
+
+    document.body.appendChild( stats.domElement );
+
 
     game.add(anew(player))
     
 
     // spin
-    flywheel(function(time_delta, time_stamp){
+    var game_loop = flywheel(function(time_delta, time_stamp){
         
         game.move_entities(time_delta)
         game.check_entity_collision()
-        game.handle_delays(time_stamp)
+        game.handle_delays(time_delta)
         game.update_entities(time_delta, time_stamp)
         game.draw_entities()
-    
+        
+        stats.update()
     
     }).start()
 
+    var running = true
+
+    // pause
+    bean.add(document, 'keydown', function(e){
+        if ( e.which !== 80 ) return
+        
+        if ( running ) {
+            running = false
+            game_loop.stop()
+        } else {
+            running = true
+            game_loop.start()
+        }
+
+    })
 }

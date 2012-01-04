@@ -31,17 +31,18 @@ var game = anew(entity_md, {
     //  GAME LOOP  //
 
 
-    handle_delays: function(time_stamp){
-        var delays = this.delays
+    handle_delays: function(time_delta){
+        var delays = this.delays,
+            curr_timestamp = this.last_timestamp + time_delta
 
         delays.forEach(handle_delay)
 
         function handle_delay(d){
-            if ( d.time > time_stamp ) return
+            if ( d.time > curr_timestamp ) return
             d.func()
             delays.splice(delays.indexOf(d), 1)
         }
-        this.last_timestamp = time_stamp
+        this.last_timestamp = curr_timestamp
 
     },
 
@@ -83,7 +84,7 @@ var game = anew(entity_md, {
             var old_x = entity.x,
                 old_y = entity.y
  
-            // apply 
+            // apply momentum
             entity.x += entity.momentum.x * time_delta
             entity.y += entity.momentum.y * time_delta
 

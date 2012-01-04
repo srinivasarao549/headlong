@@ -912,10 +912,27 @@ var game = anew(entity_md, {
             if ( !entity.momentum ) 
                 entity.momentum = { direction: 0, speed: 0 }
     
+            var old_x = entity.x,
+                old_y = entity.y
+
+            // apply velocity 
             entity.x += time_delta * Math.sin(entity.vel.direction) * entity.vel.speed
             entity.y += time_delta * Math.cos(entity.vel.direction) * entity.vel.speed
             
+            // apply momentum
+            entity.x += time_delta * Math.sin(entity.momentum.direction) * entity.momentum.speed
+            entity.y += time_delta * Math.cos(entity.momentum.direction) * entity.momentum.speed
+        
+            // record momentum
+            var x_diff = entity.x - old_x, 
+                y_diff = entity.y - old_y
 
+            entity.momentum.direction = Math.atan2(x_diff, y_diff)
+            entity.momentum.speed = Math.sqrt( (x_diff*x_diff) + (y_diff*y_diff) )
+                                    * ((entity.friction + 1) / -100)
+
+            console.log(entity.momentum)
+            
             // wipe vel
             entity.vel.direction = 0
             entity.vel.speed = 0

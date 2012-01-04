@@ -17,7 +17,7 @@ var player = anew({
 
     speed: 0.2,
 
-    friction: 0,
+    friction: 1,
     weapon: weapons.standard, 
 
     draw: function(context){

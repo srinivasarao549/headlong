@@ -98,6 +98,7 @@ var game = anew(entity_md, {
                 entity.momentum.y = ((entity.y - old_y) * entity.slipperiness)
                                     / time_delta 
             }
+            
             // wipe vel
             entity.vel.direction = 0
             entity.vel.speed = 0

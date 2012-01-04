@@ -83,7 +83,8 @@ function start_game(){
     var player = require("./entities/player")
 
     game.add(anew(player))
-   
+    
+
     // spin
     flywheel(function(time_delta, time_stamp){
         
@@ -92,6 +93,9 @@ function start_game(){
         game.handle_delays(time_stamp)
         game.update_entities(time_delta, time_stamp)
         game.draw_entities()
+    
+        game.context.fillStyle = "#fff"
+        game.context.fillRect(0, 0, 100, 100)
     
     }).start()
 

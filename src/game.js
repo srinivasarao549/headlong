@@ -101,7 +101,6 @@ var game = anew(entity_md, {
             }
             
             // wipe vel
-            entity.vel.direction = 0
             entity.vel.speed = 0
         }
     }

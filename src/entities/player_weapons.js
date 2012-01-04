@@ -16,7 +16,7 @@ var standard = anew({}, {
     update: function(td){
         this.y -= this.speed * td
 
-        if ( this.y < 100 ) this.game.remove(this)
+        if ( this.y < -100 ) this.game.remove(this)
     }
 
 })

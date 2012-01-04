@@ -910,29 +910,23 @@ var game = anew(entity_md, {
             if ( entity.apply_physics == false ) return 
             
             if ( !entity.momentum ) 
-                entity.momentum = { direction: 0, speed: 0 }
+                entity.momentum = { x: 0, y: 0 }
     
             var old_x = entity.x,
                 old_y = entity.y
+ 
+            console.log(entity.momentum.x, entity.momentum.y)
+            // apply 
+            entity.x += entity.momentum.x * time_delta
+            entity.y += entity.momentum.y * time_delta
 
-            // apply velocity 
+            // apply vel
             entity.x += time_delta * Math.sin(entity.vel.direction) * entity.vel.speed
             entity.y += time_delta * Math.cos(entity.vel.direction) * entity.vel.speed
             
-            // apply momentum
-            entity.x += time_delta * Math.sin(entity.momentum.direction) * entity.momentum.speed
-            entity.y += time_delta * Math.cos(entity.momentum.direction) * entity.momentum.speed
-        
-            // record momentum
-            var x_diff = entity.x - old_x, 
-                y_diff = entity.y - old_y
-
-            entity.momentum.direction = Math.atan2(x_diff, y_diff)
-            entity.momentum.speed = Math.sqrt( (x_diff*x_diff) + (y_diff*y_diff) )
-                                    * ((entity.friction + 1) / -100)
-
-            console.log(entity.momentum)
-            
+            // store momentum
+            entity.momentum.x = (((entity.x - old_x)) * entity.slipperiness) / time_delta
+            entity.momentum.y = (((entity.y - old_y)) * entity.slipperiness) / time_delta 
             // wipe vel
             entity.vel.direction = 0
             entity.vel.speed = 0
@@ -1057,9 +1051,10 @@ var player = anew({
     width: 50,
     height: 60,
 
-    speed: 0.2,
+    speed: 0.3,
+    max_speed: 0.3,
 
-    friction: 0,
+    slipperiness: 0.8,
     weapon: weapons.standard, 
 
     draw: function(context){

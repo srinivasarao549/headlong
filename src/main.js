@@ -80,15 +80,16 @@ void function get_image(){
 function start_game(){
     
     // add first entities
-    var player = require("./entities/player"),
-        Stats = require("./libs/Stats.js"),
-        stats = new Stats
+    var player  = require("./entities/player"),
+        gm      = require("./entities/game_manager")
+        Stats   = require("./libs/Stats.js"),
+        stats   = new Stats
 
     document.body.appendChild( stats.domElement );
 
 
     game.add(anew(player))
-    
+    game.add(anew(gm))
 
     // spin
     var game_loop = flywheel(function(time_delta, time_stamp){

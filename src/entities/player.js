@@ -1,5 +1,5 @@
 var anew = require("../libs/anew"),
-    weapons = require("./player_weapons")
+    weapons = require("./weapons")
 
 var player = anew({
     
@@ -53,7 +53,7 @@ var player = anew({
 
         this.game.delay(function(){
             this._weapon_cooldown = false
-        }.bind(this), 100)
+        }.bind(this), this.weapon.rate)
     },
     
     _flying: function(){

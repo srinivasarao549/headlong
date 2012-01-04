@@ -1083,7 +1083,7 @@ require.define("/libs/entity_md.js", function (require, module, exports, __dirna
 
 require.define("/entities/player.js", function (require, module, exports, __dirname, __filename) {
     var anew = require("../libs/anew"),
-    weapons = require("./player_weapons")
+    weapons = require("./weapons")
 
 var player = anew({
     
@@ -1137,7 +1137,7 @@ var player = anew({
 
         this.game.delay(function(){
             this._weapon_cooldown = false
-        }.bind(this), 100)
+        }.bind(this), this.weapon.rate)
     },
     
     _flying: function(){
@@ -1174,7 +1174,7 @@ module.exports = player
 
 });
 
-require.define("/entities/player_weapons.js", function (require, module, exports, __dirname, __filename) {
+require.define("/entities/weapons.js", function (require, module, exports, __dirname, __filename) {
     var anew = require("../libs/anew")
 
 var standard = anew({}, {
@@ -1188,9 +1188,10 @@ var standard = anew({}, {
     y: 0,
     width: 10,
     height: 20,
-    speed: 0.5,
+    speed: .75,
     slipperiness: 1,
     
+    rate: 75,
     on_add: function(){
         this.vel = {speed: this.speed, direction: Math.PI}
     }
@@ -1203,6 +1204,139 @@ var standard = anew({}, {
 module.exports = {
     standard: standard
 }
+
+});
+
+require.define("/entities/game_manager.js", function (require, module, exports, __dirname, __filename) {
+    var anew = require("../libs/anew"),
+    enemies = require("./enemies")
+
+
+var levels = [
+    [
+        {type: "peon", time: 0}
+    
+    ]
+
+]
+
+
+var game_manager = anew({
+    
+    game: undefined,
+    current_level: 0,   
+
+    on_add: function(){
+        this.load_level(0)
+    },
+
+    load_level: function(num){
+        var spec = levels[num],
+            game = this.game
+        
+        // if run out of levels, you've won
+        if ( !spec ) this.win()
+
+        // else make enemies
+        spec.forEach(queue_enemy)
+        
+        function queue_enemy(spec){
+            var enemy = anew(enemies[spec.type], spec.options)
+            
+            game.delay(function(){
+                console.log(enemy)
+                game.add(enemy)
+            }, spec.time * 1000)
+        }
+    },
+
+    update: function(){
+    },
+
+    win: function(){
+        console.log("you've won!")
+    }
+
+    
+})
+
+
+
+module.exports = game_manager
+
+});
+
+require.define("/entities/enemies.js", function (require, module, exports, __dirname, __filename) {
+    var anew = require("../libs/anew"),
+    base = require("./base_entity"),
+    weapons = require("./weapons")
+
+var base_enemy = anew(base, {
+    type: "enemy",
+    weapon: weapons.standard,
+    _firing: function(dir){
+
+        dir = dir || 0
+
+        if ( this._weapon_cooldown ) return 
+            
+            // create new bullet
+            var bullet = anew(this.weapon)
+            bullet.x -= this.x
+            bullet.y -= this.y
+            
+            this.game.add(bullet)
+            
+            // handle cooldown
+            this._weapon_cooldown = true
+
+            this.game.delay(function(){
+                console.log('yes')
+                this._weapon_cooldown = false
+            }.bind(this), this.weapon.rate)
+
+    }
+})
+
+module.exports = {
+    
+    peon: anew(base_enemy, {
+        
+        constructor: function(){
+        },
+        draw: function(context){
+            context.fillStyle = "#eee"
+            context.fillRect(this.x, this.y, this.width, this.height)
+        },
+        update: function(){
+            this.vel.speed = 0.1
+            this._firing()
+        }
+        
+    })
+}
+
+});
+
+require.define("/entities/base_entity.js", function (require, module, exports, __dirname, __filename) {
+    var anew = require("../libs/anew")
+
+var base_entity = anew({
+    
+    constructor: function(){
+        this.vel = {
+            direction: 0,
+            speed: 0
+        }
+    },
+    game: undefined,
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100
+})
+
+module.exports = base_entity
 
 });
 
@@ -1449,15 +1583,16 @@ void function get_image(){
 function start_game(){
     
     // add first entities
-    var player = require("./entities/player"),
-        Stats = require("./libs/Stats.js"),
-        stats = new Stats
+    var player  = require("./entities/player"),
+        gm      = require("./entities/game_manager")
+        Stats   = require("./libs/Stats.js"),
+        stats   = new Stats
 
     document.body.appendChild( stats.domElement );
 
 
     game.add(anew(player))
-    
+    game.add(anew(gm))
 
     // spin
     var game_loop = flywheel(function(time_delta, time_stamp){

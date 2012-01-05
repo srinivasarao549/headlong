@@ -18,11 +18,26 @@ var player = anew({
     speed: 0.15,
 
     slipperiness: 0.73,
+
     weapon: weapons.standard, 
+    sheilds: 1000,
+    health: 1000,
+
 
     draw: function(context){
         context.fillStyle = "#eee"
         context.fillRect(this.x, this.y, this.width, this.height)
+    },
+
+    // --- COLLISION STUFF --- //
+    check_collision: function(other){
+        if ( other.type != "enemy_weapon" ) return
+    
+        if ( this.sheilds > 0 ) this.sheilds -= other.power
+        else if ( this.health > 0 ) this.health -= other.power
+
+        if ( this.health <= 0 ) console.log("game over")
+        else console.log(this.health, this.sheilds)
     },
 
     // --- UPDATE STUFF --- //

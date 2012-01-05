@@ -4,7 +4,8 @@ var anew = require("../libs/anew"),
 var weapon_base = anew(base, {
     constructor: function(){
         this.vel.direction = Math.PI
-    }
+    },
+    power: 10
 })
 
 module.exports = {
@@ -30,6 +31,4 @@ module.exports = {
             if ( this.y < 0 ) this.game.remove(this)
         }
     })
-
-
 }

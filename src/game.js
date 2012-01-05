@@ -1,5 +1,6 @@
 var entity_md = require("./libs/entity_md"),
-    anew = require("./libs/anew")
+    anew = require("./libs/anew"),
+    clash = require("./libs/clash")
 
 var game = anew(entity_md, {
 
@@ -47,7 +48,19 @@ var game = anew(entity_md, {
     },
 
 
-    check_entity_collision: function(){},
+    check_entity_collision: function(){
+        var entities = this._entities
+
+        entities.forEach(check_against_all)
+        
+        function check_against_all(entity){
+            if ( !entity.check_collision ) return 
+
+            entities.forEach(function(e){
+                if ( clash.aabb_aabb(entity, e)) entity.check_collision(e)
+            })
+        }
+    },
 
     update_entities: function(time_delta){
         this._entities.forEach(function(e){

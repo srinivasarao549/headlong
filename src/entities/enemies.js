@@ -22,6 +22,7 @@ var base_enemy = anew(base, {
         bullet.x = this.gun.x + this.x
         bullet.y = this.gun.y + this.y
         bullet.vel.direction = dir
+        bullet.type = "enemy_weapon"
 
         this.game.add(bullet)
         
@@ -47,8 +48,8 @@ module.exports = {
             this.vel.speed = 0.1
             this._firing(0)
         
-            if ( this.x < 100 ) this.vel.direction = Math.PI * 0.45
-            else if ( this.x + this.width > 400 ) this.vel.direction = Math.PI * 1.55
+            if ( this.x < 100 ) this.vel.direction = Math.PI * 0.5
+            else if ( this.x + this.width > 400 ) this.vel.direction = Math.PI * 1.5
         }
         
     })

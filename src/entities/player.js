@@ -1,5 +1,6 @@
 var anew = require("../libs/anew"),
-    weapons = require("./weapons")
+    weapons = require("./weapons"),
+    ui = require("./ui")
 
 var player = anew({
     
@@ -23,7 +24,28 @@ var player = anew({
     shield_strength: 1000,
     shield_max: 1000,
     health: 500,
+    health_max: 500,
 
+    on_add: function(){
+        var my_ui = {
+            health: anew(ui.bar, {
+                color: "#f00",
+                x: 20,
+                y: 40
+            }),
+            shields: anew(ui.bar, {
+                color: "#00f",
+                x: 20,
+                y: 20,
+            })
+        }
+        
+
+        this.game.add(my_ui.health)
+        this.game.add(my_ui.shields)
+        
+        this.ui = my_ui
+    },
 
     draw: function(context){
         if ( this.shields ) context.fillStyle = "#fff"
@@ -55,7 +77,9 @@ var player = anew({
         this._firing()
         this._flying()
         this._shields(td)
-
+        
+        // display
+        this._health()
 
         // constrain
         var canvas = this.game.canvas
@@ -133,6 +157,12 @@ var player = anew({
         } else {
             this.shields = false
         }
+
+        this.ui.shields.percent = (this.shield_strength / this.shield_max) * 100
+    },
+
+    _health: function(){
+        this.ui.health.percent = (this.health / this.health_max ) * 100
     }
     
 

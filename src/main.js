@@ -37,6 +37,8 @@ void function setup_input(){
             input.down = true
         else if ( k == 88 )
             input.fire = true
+        else if ( k == 90 )
+            input.shields = true
 
         // disable up, down and space for scrolling
         if ( k == 38 || k == 40 || k == 32 ) e.preventDefault()
@@ -55,7 +57,8 @@ void function setup_input(){
             input.down = false
         else if ( k == 88 )
             input.fire = false
-
+        else if ( k == 90 )
+            input.shields = false
     })
 
     game.input = input

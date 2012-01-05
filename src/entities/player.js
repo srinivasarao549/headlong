@@ -20,24 +20,32 @@ var player = anew({
     slipperiness: 0.73,
 
     weapon: weapons.standard, 
-    sheilds: 1000,
-    health: 1000,
+    shield_strength: 1000,
+    shield_max: 1000,
+    health: 500,
 
 
     draw: function(context){
-        context.fillStyle = "#eee"
+        if ( this.shields ) context.fillStyle = "#fff"
+        else context.fillStyle = "#555"
         context.fillRect(this.x, this.y, this.width, this.height)
     },
 
     // --- COLLISION STUFF --- //
     check_collision: function(other){
         if ( other.type != "enemy_weapon" ) return
-    
-        if ( this.sheilds > 0 ) this.sheilds -= other.power
-        else if ( this.health > 0 ) this.health -= other.power
-
+        
+        // use shield if it's on 
+        if ( this.shields && this.shield_strength > 0 ) 
+            this.shield_strength -= other.power
+        else if ( this.health > 0 ) 
+            this.health -= other.power
+        
         if ( this.health <= 0 ) console.log("game over")
-        else console.log(this.health, this.sheilds)
+        else console.log(this.health, this.shield_strength)
+
+        // destroy bullets
+        this.game.remove(other)
     },
 
     // --- UPDATE STUFF --- //
@@ -46,7 +54,9 @@ var player = anew({
         // actions
         this._firing()
         this._flying()
-        
+        this._shields(td)
+
+
         // constrain
         var canvas = this.game.canvas
         
@@ -56,18 +66,28 @@ var player = anew({
         if ( this.y + this.height > canvas.height ) this.y = canvas.height - this.height
     },  
 
+    // --- API FOR OTHER SHIPS --- //
+    add_shields: function(amount){
+        this.shield_strength += amount
+        if ( this.shield_strength > this.shield_max ) 
+            this.shield_strength = this.shield_max
+    },
+
     // --- UPDATE HELPERS --- //
     
     _weapon_cooldown: false,
 
     _firing: function(){
         
-        if ( (!this.game.input.fire) || this._weapon_cooldown ) return 
+        if ( (!this.game.input.fire) || this._weapon_cooldown || this.shields ) return 
     
         // create new bullet
         var bullet = anew(this.weapon)
         bullet.x = this.x + (bullet.offset.x * this.width ) - (bullet.width / 2)
         bullet.y = this.y + (bullet.offset.y * this.height ) - (bullet.height / 2)
+        bullet.type = "player_weapon"
+        
+        bullet.from = this
 
         this.game.add(bullet)
 
@@ -103,6 +123,16 @@ var player = anew({
     _set_vel: function(direction, speed){
         this.vel.direction = direction
         this.vel.speed = speed
+    },
+
+    _shields: function(td){
+        if ( this.game.input.shields ) {
+            this.shields = true
+            this.shield_strength -= 0.1 * td
+            if ( this.shield_strength < 0 ) this.shield_strength = 0
+        } else {
+            this.shields = false
+        }
     }
     
 

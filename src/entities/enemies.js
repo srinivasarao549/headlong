@@ -12,6 +12,7 @@ var base_enemy = anew(base, {
     },
     type: "enemy",
     weapon: weapons.standard,
+    health: 1000,
     _firing: function(dir){
 
 
@@ -34,6 +35,15 @@ var base_enemy = anew(base, {
         }.bind(this), this.weapon.rate)
 
     },
+    check_collision: function(other){
+        if ( other.type != "player_weapon" ) return
+
+        this.health -= other.power
+        other.from.add_shields(20)
+        this.game.remove(other)
+        
+        if ( this.health < 0 ) this.game.remove(this)
+    }
 })
 
 module.exports = {

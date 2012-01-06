@@ -1372,7 +1372,20 @@ var weapon_base = anew(base, {
     constructor: function(){
         this.vel.direction = Math.PI
     },
-    power: 10
+    power: 10,
+
+    update: function(){
+        var canvas = this.game.context.canvas,
+            game = this.game
+
+      if (  this.y < -100 
+         || this.y > canvas.height + 100 
+         || this.x < -100
+         || this.x > canvas.width + 100
+        ) 
+            game.remove(this)
+    
+    }
 })
 
 module.exports = {
@@ -1394,9 +1407,6 @@ module.exports = {
         on_add: function(){
             this.vel.speed = this.speed
         },
-        update: function(){
-            if ( this.y < 0 ) this.game.remove(this)
-        }
     })
 }
 

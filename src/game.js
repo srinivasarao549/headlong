@@ -20,32 +20,7 @@ var game = anew(entity_md, {
         if ( object.on_add ) object.on_add()
     },
     
-    delay: function(func, ms){
-        this.delays.push({func: func, time: this.last_timestamp + ms})
-        this.delays.sort(function(a, b){
-            return a.time - b.time
-        })
-
-        return func
-    },
-
     //  GAME LOOP  //
-
-
-    handle_delays: function(time_delta){
-        var delays = this.delays,
-            curr_timestamp = this.last_timestamp + time_delta
-
-        delays.forEach(handle_delay)
-
-        function handle_delay(d){
-            if ( d.time > curr_timestamp ) return
-            d.func()
-            delays.splice(delays.indexOf(d), 1)
-        }
-        this.last_timestamp = curr_timestamp
-
-    },
 
 
     check_entity_collision: function(){

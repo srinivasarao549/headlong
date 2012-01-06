@@ -1,6 +1,7 @@
 var anew = require("../libs/anew"),
     base = require("./base_entity"),
-    weapons = require("./weapons")
+    weapons = require("./weapons"),
+    timer = require("../timer")
 
 var base_enemy = anew(base, {
 
@@ -8,7 +9,8 @@ var base_enemy = anew(base, {
     constructor: function(){
         this.gun = {}
         this.gun.y =  this.height
-        this.gun.x =  (this.width / 2) 
+        this.gun.x =  (this.width / 2)
+        this.timer = anew(timer)
     },
     type: "enemy",
     weapon: weapons.standard,
@@ -30,7 +32,7 @@ var base_enemy = anew(base, {
         // handle cooldown
         this._weapon_cooldown = true
 
-        this.game.delay(function(){
+        this.timer.add_action(function(){
             this._weapon_cooldown = false
         }.bind(this), this.weapon.rate)
 
@@ -54,7 +56,9 @@ module.exports = {
             context.fillStyle = "#eee"
             context.fillRect(this.x, this.y, this.width, this.height)
         },
-        update: function(){
+        update: function(td){
+            this.timer.update(td)
+            
             this.vel.speed = 0.1
             this._firing(0)
         

@@ -1,52 +1,56 @@
 var anew = require("../libs/anew"),
-    enemies = require("./enemies")
+    enemies = require("./enemies"), 
+    timer = require("../timer")
 
+function gen_levels (gm){
+    var levels = []
 
-var levels = [
-    [
-        {type: "peon", time: 0}
+    levels.push([
+        { func: function(){
+            gm.spawn("peon")
+        }, time: 0},
+
+        { func: function(){
+            gm.spawn("peon")
+        }, time: 1000},
+
+        { func: function(){
+            gm.spawn("peon")
+        }, time: 2000 }
     
-    ]
+    ])
 
-]
-
+    return levels
+}
 
 var game_manager = anew({
     
     game: undefined,
-    current_level: 0,   
-
+    current_level: 0,
+    running: false,
     on_add: function(){
-        this.load_level(0)
+        this.timer = anew(timer)
+        this.levels = gen_levels(this)
     },
-
     load_level: function(num){
-        var spec = levels[num],
-            game = this.game
-        
-        // if run out of levels, you've won
-        if ( !spec ) this.win()
-
-        // else make enemies
-        spec.forEach(queue_enemy)
-        
-        function queue_enemy(spec){
-            var enemy = anew(enemies[spec.type], spec.options)
-            
-            game.delay(function(){
-                console.log(enemy)
-                game.add(enemy)
-            }, spec.time * 1000)
-        }
+        this.timer.add_actions(this.levels[num])
     },
 
-    update: function(){
+    update: function(td){
+        this.timer.update(td)
+        if ( !this.running ) {
+            this.load_level(this.current_level)
+            this.current_level += 1
+        }
     },
 
     win: function(){
         console.log("you've won!")
-    }
+    },
 
+    spawn: function(type, pattern){
+        this.game.add(anew(enemies[type]))
+    }
     
 })
 

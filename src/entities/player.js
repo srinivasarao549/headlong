@@ -1,6 +1,7 @@
 var anew = require("../libs/anew"),
     weapons = require("./weapons"),
-    ui = require("./ui")
+    ui = require("./ui"),
+    timer = require("../timer")
 
 var player = anew({
     
@@ -9,6 +10,8 @@ var player = anew({
             direction: 0,
             speed: 0
         }
+
+        this.timer = anew(timer)
     },
     game: undefined,
     x: 150,
@@ -73,6 +76,7 @@ var player = anew({
     // --- UPDATE STUFF --- //
     update: function(td){
         
+        this.timer.update(td)
         // actions
         this._firing()
         this._flying()
@@ -118,7 +122,7 @@ var player = anew({
         // handle cooldown
         this._weapon_cooldown = true
 
-        this.game.delay(function(){
+        this.timer.add_action(function(){
             this._weapon_cooldown = false
         }.bind(this), this.weapon.rate)
     },

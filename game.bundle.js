@@ -894,32 +894,7 @@ var game = anew(entity_md, {
         if ( object.on_add ) object.on_add()
     },
     
-    delay: function(func, ms){
-        this.delays.push({func: func, time: this.last_timestamp + ms})
-        this.delays.sort(function(a, b){
-            return a.time - b.time
-        })
-
-        return func
-    },
-
     //  GAME LOOP  //
-
-
-    handle_delays: function(time_delta){
-        var delays = this.delays,
-            curr_timestamp = this.last_timestamp + time_delta
-
-        delays.forEach(handle_delay)
-
-        function handle_delay(d){
-            if ( d.time > curr_timestamp ) return
-            d.func()
-            delays.splice(delays.indexOf(d), 1)
-        }
-        this.last_timestamp = curr_timestamp
-
-    },
 
 
     check_entity_collision: function(){
@@ -1191,7 +1166,8 @@ module.exports = clash
 require.define("/entities/player.js", function (require, module, exports, __dirname, __filename) {
     var anew = require("../libs/anew"),
     weapons = require("./weapons"),
-    ui = require("./ui")
+    ui = require("./ui"),
+    timer = require("../timer")
 
 var player = anew({
     
@@ -1200,6 +1176,8 @@ var player = anew({
             direction: 0,
             speed: 0
         }
+
+        this.timer = anew(timer)
     },
     game: undefined,
     x: 150,
@@ -1264,6 +1242,7 @@ var player = anew({
     // --- UPDATE STUFF --- //
     update: function(td){
         
+        this.timer.update(td)
         // actions
         this._firing()
         this._flying()
@@ -1309,7 +1288,7 @@ var player = anew({
         // handle cooldown
         this._weapon_cooldown = true
 
-        this.game.delay(function(){
+        this.timer.add_action(function(){
             this._weapon_cooldown = false
         }.bind(this), this.weapon.rate)
     },
@@ -1459,56 +1438,104 @@ module.exports = {
 
 });
 
+require.define("/timer.js", function (require, module, exports, __dirname, __filename) {
+    var anew = require("./libs/anew")
+
+var timer = anew({
+    constructor: function(){
+        this.actions        = []
+        this.elapsed_time   = 0
+    },
+    update: function(td){
+        var actions = this.actions
+        
+        this.elapsed_time += td
+        var elapsed_time = this.elapsed_time
+
+        actions.forEach(handle_delay)
+
+        function handle_delay(d){
+            if ( d.time > elapsed_time ) return
+            d.func()
+            actions.splice(actions.indexOf(d), 1)
+        }
+    },
+    add_action: function(func, time){
+        this.actions.push({func: func, time: this.elapsed_time + time})
+        this.actions.sort(function(a, b){
+            return a.time - b.time
+        })
+    },
+
+    add_actions: function(array){
+        if ( !array ) return
+        var self = this
+        array.forEach(function(object){
+            self.add_action(object.func, object.time)
+        })
+    },
+
+})
+
+
+module.exports = timer
+
+});
+
 require.define("/entities/game_manager.js", function (require, module, exports, __dirname, __filename) {
     var anew = require("../libs/anew"),
-    enemies = require("./enemies")
+    enemies = require("./enemies"), 
+    timer = require("../timer")
 
+function gen_levels (gm){
+    var levels = []
 
-var levels = [
-    [
-        {type: "peon", time: 0}
+    levels.push([
+        { func: function(){
+            gm.spawn("peon")
+        }, time: 0},
+
+        { func: function(){
+            gm.spawn("peon")
+        }, time: 1000},
+
+        { func: function(){
+            gm.spawn("peon")
+        }, time: 2000 }
     
-    ]
+    ])
 
-]
-
+    return levels
+}
 
 var game_manager = anew({
     
     game: undefined,
-    current_level: 0,   
-
+    current_level: 0,
+    running: false,
     on_add: function(){
-        this.load_level(0)
+        this.timer = anew(timer)
+        this.levels = gen_levels(this)
     },
-
     load_level: function(num){
-        var spec = levels[num],
-            game = this.game
-        
-        // if run out of levels, you've won
-        if ( !spec ) this.win()
-
-        // else make enemies
-        spec.forEach(queue_enemy)
-        
-        function queue_enemy(spec){
-            var enemy = anew(enemies[spec.type], spec.options)
-            
-            game.delay(function(){
-                console.log(enemy)
-                game.add(enemy)
-            }, spec.time * 1000)
-        }
+        this.timer.add_actions(this.levels[num])
     },
 
-    update: function(){
+    update: function(td){
+        this.timer.update(td)
+        if ( !this.running ) {
+            this.load_level(this.current_level)
+            this.current_level += 1
+        }
     },
 
     win: function(){
         console.log("you've won!")
-    }
+    },
 
+    spawn: function(type, pattern){
+        this.game.add(anew(enemies[type]))
+    }
     
 })
 
@@ -1521,7 +1548,8 @@ module.exports = game_manager
 require.define("/entities/enemies.js", function (require, module, exports, __dirname, __filename) {
     var anew = require("../libs/anew"),
     base = require("./base_entity"),
-    weapons = require("./weapons")
+    weapons = require("./weapons"),
+    timer = require("../timer")
 
 var base_enemy = anew(base, {
 
@@ -1529,7 +1557,8 @@ var base_enemy = anew(base, {
     constructor: function(){
         this.gun = {}
         this.gun.y =  this.height
-        this.gun.x =  (this.width / 2) 
+        this.gun.x =  (this.width / 2)
+        this.timer = anew(timer)
     },
     type: "enemy",
     weapon: weapons.standard,
@@ -1551,7 +1580,7 @@ var base_enemy = anew(base, {
         // handle cooldown
         this._weapon_cooldown = true
 
-        this.game.delay(function(){
+        this.timer.add_action(function(){
             this._weapon_cooldown = false
         }.bind(this), this.weapon.rate)
 
@@ -1575,7 +1604,9 @@ module.exports = {
             context.fillStyle = "#eee"
             context.fillRect(this.x, this.y, this.width, this.height)
         },
-        update: function(){
+        update: function(td){
+            this.timer.update(td)
+            
             this.vel.speed = 0.1
             this._firing(0)
         
@@ -1850,7 +1881,6 @@ function start_game(){
         
         game.move_entities(time_delta)
         game.check_entity_collision()
-        game.handle_delays(time_delta)
         game.update_entities(time_delta)
         game.draw_entities()
         
